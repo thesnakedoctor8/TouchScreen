@@ -3,9 +3,9 @@
 #include <Adafruit_ILI9341.h>
 #include <Wire.h>            // this is needed for FT6206
 #include <Adafruit_FT6206.h>
-#include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
 
 #include <Keypad.h>
 
@@ -29,7 +29,7 @@
 
 // Global variables
 int deviceState = MAIN_SCREEN;    // stateof the device
-double frequency = 1.00;
+long frequency = 1.00;
 double pkpkVoltage = 2.5;
 double rmsVoltage = .884;
 double dBm = -39.032;
@@ -68,10 +68,8 @@ char keys[ROWS][COLS] = {
 byte rowPins[ROWS] = {30, 32, 34, 36};
 // Connect keypad COL0, COL1 and COL2 to these Arduino pins.
 byte colPins[COLS] = {38, 40, 42}; 
-
 // Create the Keypad
 Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
-
 // String for holding the frequency typed
 String keypadStr;// = String(9);
 int keysPressed = 0;
@@ -129,7 +127,13 @@ void loop()
       str.substring(13, 19).toCharArray(volt, 7);
       str.substring(20, 21).toCharArray(wave, 2);
       
-      frequency = strtod(freq, NULL);
+      // Remove the decimal
+      freq[sizeof(freq)-4] = freq[sizeof(freq)-3];
+      freq[sizeof(freq)-3] = freq[sizeof(freq)-2];
+      freq[sizeof(freq)-2] = freq[sizeof(freq)-1];
+      freq[sizeof(freq)-1] = '\0';
+
+      frequency = atol(freq);
       pkpkVoltage = strtod(volt, NULL);
       rmsVoltage = pkpkVoltage / (2 * 1.41421356237);
       dBm = 20*log10((pkpkVoltage/100)/pow(.05, .5));
@@ -1745,7 +1749,7 @@ void sendDataToArduino()
   char chr2[7];
   char chr3[2];
   
-  dtostrf(frequency, 11, 2, chr1);
+  ltoa(frequency, chr1, 10);
   dtostrf(pkpkVoltage, 6, 1, chr2);
   dtostrf(waveform, 1, 0, chr3);
   
@@ -1754,8 +1758,36 @@ void sendDataToArduino()
   String str3 = String(chr3);
   
   dataStr = "#";
-  str1.replace(" ", "0");
-  dataStr += str1;
+  
+  int length = 10 - str1.length();
+  if(length > 8)
+  {
+    length = 8; 
+  }
+  for(int i = 0; i < length; i++)
+  {
+    dataStr += "0";
+  }
+  if(length < 8)
+  {
+    dataStr += str1.substring(0, str1.length()-2);
+    dataStr += ".";
+    dataStr += str1.substring(str1.length()-2, str1.length());
+  }
+  else
+  {
+    if(str1.length() <= 1)
+    {
+      dataStr += ".0";
+      dataStr += str1;
+    }
+    else
+    {
+      dataStr += ".";
+      dataStr += str1;
+    }
+  }
+
   dataStr += "-";
   dataStr += str2;
   dataStr += "-";
@@ -1763,6 +1795,7 @@ void sendDataToArduino()
   dataStr.toCharArray(data, 22);
 
   Serial1.write(data);
+  //TODO CHECK IF CHANGING TO Serial.println(data) works with fahim's if problems arise
 }
 
 void sendDataToPC()
@@ -1771,7 +1804,7 @@ void sendDataToPC()
   char chr2[7];
   char chr3[2];
   
-  dtostrf(frequency, 11, 2, chr1);
+  ltoa(frequency, chr1, 10);
   dtostrf(pkpkVoltage, 6, 1, chr2);
   dtostrf(waveform, 1, 0, chr3);
   
@@ -1780,8 +1813,36 @@ void sendDataToPC()
   String str3 = String(chr3);
   
   dataStr = "#";
-  str1.replace(" ", "0");
-  dataStr += str1;
+  
+  int length = 10 - str1.length();
+  if(length > 8)
+  {
+    length = 8; 
+  }
+  for(int i = 0; i < length; i++)
+  {
+    dataStr += "0";
+  }
+  if(length < 8)
+  {
+    dataStr += str1.substring(0, str1.length()-2);
+    dataStr += ".";
+    dataStr += str1.substring(str1.length()-2, str1.length());
+  }
+  else
+  {
+    if(str1.length() <= 1)
+    {
+      dataStr += ".0";
+      dataStr += str1;
+    }
+    else
+    {
+      dataStr += ".";
+      dataStr += str1;
+    }
+  }
+  
   dataStr += "-";
   str2.replace(" ", "0");
   dataStr += str2;
