@@ -23,13 +23,12 @@
 #define MAIN_SCREEN           0
 #define FREQUENCY_SCREEN      1
 #define OUTPUT_SCREEN         2
-#define TABLE_OPEN_SCREEN     3
-#define TABLE_VIEW_SCREEN     4
+
 #define FREQUENCY_SCREEN_TEXT 5
 
 // Global variables
 int deviceState = MAIN_SCREEN;    // stateof the device
-long frequency = 1.00;
+long frequency = 100;
 double pkpkVoltage = 2.5;
 double rmsVoltage = .884;
 double dBm = -39.032;
@@ -69,7 +68,7 @@ byte rowPins[ROWS] = {30, 32, 34, 36};
 // Connect keypad COL0, COL1 and COL2 to these Arduino pins.
 byte colPins[COLS] = {38, 40, 42}; 
 // Create the Keypad
-Keypad kpd = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // String for holding the frequency typed
 String keypadStr;// = String(9);
 int keysPressed = 0;
@@ -162,9 +161,9 @@ void loop()
 
         char keyFreq[12];
         keypadStr.toCharArray(keyFreq, 12);
-        double tempFrequency = strtod(keyFreq, NULL);
-
-        if(tempFrequency >= 1 && tempFrequency <= 10000000)
+        long tempFrequency = atol(keyFreq);
+        tempFrequency *= 100;
+        if(tempFrequency >= 100 && tempFrequency <= 1000000000)
         {
           frequency = tempFrequency;
           sendDataToArduino();
@@ -292,7 +291,6 @@ void loop()
       }
     }    
   }
-
   
   // Wait for a touch
   if(!ts.touched())
@@ -353,21 +351,6 @@ void changeOutputView()
   peakToPeakBlock();
   rmsBlock();
   dbmBlock();
-  backButton();
-}
-
-void tableOpenView()
-{
-  headerBlock("Open Table");
-  showStoredTables(0);
-  scrollbar();
-  backButton();
-}
-
-void tableViewView()
-{
-  headerBlock("Table Viewer");
-  //TODO
   backButton();
 }
 
@@ -462,20 +445,6 @@ void outputLevelBlock(int y)
   tft.println("Output");
 }
 
-void tablesBlock()
-{
-  tft.setCursor(10, 281);
-  tft.setTextColor(WHITE);
-  tft.setTextSize(2);
-  tft.println("Tables:");
-  
-  tft.drawRect(100, 270, 60, 35, BLUE);
-  tft.setCursor(107, 281);
-  tft.setTextColor(RED);
-  tft.setTextSize(2);
-  tft.println("Open");
-}
-
 // ************************************************************
 // *******************Change Frequency Block*******************
 // ************************************************************
@@ -541,7 +510,6 @@ void keypadTextBlock(int y)
   tft.print("Hz");
 }
 
-
 void keypadDescriptionBlock(int y)
 {
   tft.setCursor(0, y);
@@ -576,40 +544,6 @@ void dbmBlock()
   incrementPanel(208);
 }
 
-// ******************************************************
-// *******************Table Open Block*******************
-// ******************************************************
-
-void showStoredTables(int index)
-{
-  // Gather List of Stored Tables
-  // TODO
-
-  // Recheck for a different index
-
-  // Calculate the loop end
-
-  // Iniital button height
-  int y = 40;
-
-  // Print out 
-  for(int i = index; i < 5; i++)
-  {
-    tableButton("Table Name", y);
-    y += 45;
-  }
-}
-
-void scrollbar()
-{
-  scrollUp();
-  scrollDown();
-}
-
-// ********************************************************
-// *******************Table Viewer Block*******************
-// ********************************************************
-
 // **************************************************************
 // *******************(Multiple Layout) Block*******************
 // **************************************************************
@@ -640,38 +574,6 @@ void changeFrequencyTextButton(int y)
   button(15, y, 1, "Enter Frequency");
 }
 
-// ***************************************************
-// *******************Table Buttons*******************
-// ***************************************************
-void tableButton(String str, int y)
-{
-  tft.drawRect(10, y, 160, 40, BLUE);
-  tft.setCursor(15, y + 10);
-  tft.setTextColor(RED);
-  tft.setTextSize(2);
-  tft.println(str);
-}
-
-void scrollUp()
-{
-  tft.drawRect(185, 85, 40, 40, BLUE);
-  // Text inside the button
-  tft.setCursor(198, 100);
-  tft.setTextColor(RED);
-  tft.setTextSize(3);
-  tft.println("^");
-}
-
-void scrollDown()
-{
-  tft.drawRect(185, 175, 40, 40, BLUE);
-  // Text inside the button
-  tft.setCursor(198, 183);
-  tft.setTextColor(RED);
-  tft.setTextSize(3);
-  tft.println("v");
-}
-
 // ********************************************************
 // *******************(Multiple) Buttons*******************
 // ********************************************************
@@ -700,14 +602,6 @@ void backButton()
 /////////////                      Texts/Labels                     /////////////
 /////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////
-
-// ************************************************
-// *******************Main Texts*******************
-// ************************************************
-
-// **************************************************
-// *******************Output Texts*******************
-// **************************************************
 
 // ******************************************************
 // *******************(Multiple) Texts*******************
@@ -755,7 +649,7 @@ void keypadTextMessage(int y, uint16_t color, String message)
   tft.print(message);
 }
 
-//CHANGE DIMENSIONS
+//TODO CHECK DIMENSIONS
 void keypadTextMessageClear(int y)
 {
   tft.fillRect(65, y, 120, 10, BLACK);
@@ -851,12 +745,6 @@ void changeDisplayScreens()
         break;
     case OUTPUT_SCREEN:
         changeOutputView();
-        break;
-    case TABLE_OPEN_SCREEN:
-        tableOpenView();
-        break;
-    case TABLE_VIEW_SCREEN:
-        tableViewView();
         break;
     case FREQUENCY_SCREEN_TEXT:
         changeFrequencyTextView();
@@ -986,21 +874,21 @@ void checkButtonPressed(int x, int y)
           switch(multiplier)
           {
             case 1:
-              frequency -= 1;      
+              frequency -= 10;      
               break;
             
             case 2:
-              frequency -= 10;
+              frequency -= 10000;
               break;
             
             case 3:
-              frequency -= 100;
+              frequency -= 10000000;
               break;
           }
 
-          if(frequency < .01)
+          if(frequency < 1)
           {
-            frequency = .01;
+            frequency = 1;
           }
           sendDataToArduino();
           sendDataToPC();
@@ -1012,24 +900,11 @@ void checkButtonPressed(int x, int y)
         // <
         if(x > 70 && x < 112 && y > 80 && y < 114)
         {
-          switch(multiplier)
-          {
-            case 1:
-              frequency -= .01;      
-              break;
-            
-            case 2:
-              frequency -= .1;
-              break;
-            
-            case 3:
-              frequency -= 1;
-              break;
-          }
+          frequency -= 1;
 
-          if(frequency < .01)
+          if(frequency < 1)
           {
-            frequency = .01;
+            frequency = 1;
           }
           sendDataToArduino();
           sendDataToPC();
@@ -1041,24 +916,11 @@ void checkButtonPressed(int x, int y)
         // >
         if(x > 125 && x < 167 && y > 80 && y < 114)
         {
-          switch(multiplier)
-          {
-            case 1:
-              frequency += .01;      
-              break;
-            
-            case 2:
-              frequency += .1;
-              break;
-            
-            case 3:
-              frequency += 1;
-              break;
-          }
+          frequency += 1;
 
-          if(frequency > 10000000)
+          if(frequency > 1000000000)
           {
-            frequency = 10000000;
+            frequency = 1000000000;
           }
           sendDataToArduino();
           sendDataToPC();
@@ -1073,21 +935,21 @@ void checkButtonPressed(int x, int y)
           switch(multiplier)
           {
             case 1:
-              frequency += 1;      
+              frequency += 10;      
               break;
             
             case 2:
-              frequency += 10;
+              frequency += 10000;
               break;
             
             case 3:
-              frequency += 100;
+              frequency += 10000000;
               break;
           }
 
-          if(frequency > 10000000)
+          if(frequency > 1000000000)
           {
-            frequency = 10000000;
+            frequency = 1000000000;
           }
           sendDataToArduino();
           sendDataToPC();
@@ -1107,17 +969,17 @@ void checkButtonPressed(int x, int y)
               break;
             
             case 2:
-              frequency -= 10000;
+              frequency -= 100000;
               break;
             
             case 3:
-              frequency -= 100000;
+              frequency -= 100000000;
               break;
           }
 
-          if(frequency < .01)
+          if(frequency < 1)
           {
-            frequency = .01;
+            frequency = 1;
           }
           sendDataToArduino();
           sendDataToPC();
@@ -1136,17 +998,17 @@ void checkButtonPressed(int x, int y)
               break;
             
             case 2:
-              frequency += 10000;
+              frequency += 100000;
               break;
             
             case 3:
-              frequency += 100000;
+              frequency += 100000000;
               break;
           }
-
-          if(frequency > 10000000)
+          
+          if(frequency > 1000000000)
           {
-            frequency = 10000000;
+            frequency = 1000000000;
           }
           sendDataToArduino();
           sendDataToPC();
@@ -1160,7 +1022,7 @@ void checkButtonPressed(int x, int y)
         // 1 MHz
         if(x > 143 && x < 221 && y > 130 && y < 164)
         {
-          frequency = 1000000;
+          frequency = 100000000;
           sendDataToArduino();
           sendDataToPC();
           // Draw a black rectangle over the frequency
@@ -1171,7 +1033,7 @@ void checkButtonPressed(int x, int y)
         // 1 KHz
         if(x > 143 && x < 221 && y > 190 && y < 224)
         {
-          frequency = 1000;
+          frequency = 100000;
           sendDataToArduino();
           sendDataToPC();
           // Draw a black rectangle over the frequency
@@ -1182,7 +1044,7 @@ void checkButtonPressed(int x, int y)
         // 1 Hz
         if(x > 143 && x < 221 && y > 250 && y < 284)
         {
-          frequency = 1;
+          frequency = 100;
           sendDataToArduino();
           sendDataToPC();
           // Draw a black rectangle over the frequency
@@ -1519,27 +1381,7 @@ void checkButtonPressed(int x, int y)
         break;
     
     //////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////    
-    case TABLE_OPEN_SCREEN:
-        // Back button
-        if(x > 10 && x < 70 && y > 260 && y < 310)
-        {
-          deviceState = MAIN_SCREEN;
-          changeDisplayScreens();
-        }
-        break;
-    
-    //////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////    
-    case TABLE_VIEW_SCREEN:
-        // Back button
-        if(x > 10 && x < 70 && y > 260 && y < 310)
-        {
-          deviceState = MAIN_SCREEN;
-          changeDisplayScreens();
-        }
-        break;
-
+    ////////////////////////////////////////////////////// 
     case FREQUENCY_SCREEN_TEXT:
         // Change frequency screen button
         if(x > 40 && x < 197 && y > 185 && y < 212)
@@ -1588,33 +1430,49 @@ void button(int x, int y, int textSize, String str)
 }
 
 // Helper method. Formats the frequency to the string frequencyString
-String frequencyToString(double frequency)
+String frequencyToString(long frequency)
 {
   String frequencyString = String(15);
-  char str[12];
-  // 0 - 1,000 (Hz)
+  char strf[12];
+  ltoa(frequency, strf, 10);
+  String str = String(strf);
+  int length = floor(log10(abs(frequency))) + 1;
+  // 0 - 1,000 (Hz)               
   // 1,000 - 1,000,000 (Khz)
   // 1,000,000 - 10,000,000 (Mhz)
   
-  if (frequency < 1000)
+  if (frequency < 100000)
   {
-    dtostrf(frequency, 11, 2, str);
-    frequencyString = str;
+    frequencyString = str.substring(0, length - 2);
+    frequencyString += ".";
+    frequencyString += str.substring(length - 2, length);
     frequencyString += " Hz";
   }
   else
   {
-    if (frequency >= 1000 && frequency < 1000000)
+    if (frequency >= 100000 && frequency < 100000000)
     {
-      dtostrf(frequency/1000.0, 11, 5, str);
-      frequencyString = str;
+      frequencyString = str.substring(0, length - 5);
+      frequencyString += ".";
+      frequencyString += str.substring(length - 5, length);
       frequencyString += " KHz";
     }
     else
     {
-      dtostrf(frequency/1000000.0, 11, 8, str);
-      frequencyString = str;
-      frequencyString += " MHz";
+      if (frequency > 999997800 && frequency < 1000000000)
+      {
+        frequencyString = str.substring(0, length - 9);
+        frequencyString += ".";
+        frequencyString += str.substring(length - 9, length);
+        frequencyString += " MHz";
+      }
+      else
+      {
+        frequencyString = str.substring(0, length - 8);
+        frequencyString += ".";
+        frequencyString += str.substring(length - 8, length);
+        frequencyString += " MHz";
+      }
     }
   }
 
