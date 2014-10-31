@@ -3,6 +3,8 @@
 #include <Adafruit_ILI9341.h>
 #include <Wire.h>            // this is needed for FT6206
 #include <Adafruit_FT6206.h>
+#include <EepromUtil.h>
+#include <EEPROM.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -28,6 +30,9 @@
 
 // Global variables
 int deviceState = MAIN_SCREEN;    // stateof the device
+
+//{"#00000001.00-0002.5-0"};
+
 long frequency = 100;
 double pkpkVoltage = 2.5;
 double rmsVoltage = .884;
@@ -94,17 +99,33 @@ void setup(void)
   // pass in 'sensitivity' coefficient
   if(!ts.begin(40))
   {
-    //Serial.println("Couldn't start FT6206 touchscreen controller");
+    errorText();
     // Continually loop until device is reset
     while(1);
-  }
-  else
-  {
-    //Serial.println("Capacitive touchscreen started");
   }
   
   keypadStr = "";
   keysPressed = 0;
+
+  if(EepromUtil::eeprom_read_string(0, readBuffer, 22))
+  {
+    String str = String(readBuffer);
+    str.substring(1, 12).toCharArray(freq, 12);
+    str.substring(13, 19).toCharArray(volt, 7);
+    str.substring(20, 21).toCharArray(wave, 2);
+    
+    freq[sizeof(freq)-4] = freq[sizeof(freq)-3];
+    freq[sizeof(freq)-3] = freq[sizeof(freq)-2];
+    freq[sizeof(freq)-2] = freq[sizeof(freq)-1];
+    freq[sizeof(freq)-1] = '\0';
+    
+    //frequency = strtod(freq, NULL);
+    frequency = atol(freq);
+    pkpkVoltage = strtod(volt, NULL);
+    rmsVoltage = pkpkVoltage / (2 * 1.41421356237);
+    dBm = 20*log10((pkpkVoltage/100)/pow(.05, .5));
+    waveform = strtod(wave, NULL);
+  }
 
   // Clear the screen
   clearScreen();
@@ -319,7 +340,8 @@ void mainScreenView()
   frequencyBlock();
   outputLevelBlock(130);
   changeFrequencyTextButton(230);
-  usbStatus(290);
+  loadDefaults(270);
+  //usbStatus(290);
   sinSquareBlock(230);
   //tablesBlock();
 }
@@ -393,7 +415,6 @@ void usbStatus(int y)
     tft.println("USB Disconnected");
   }
 }
-
 
 void usbStatusClear(int y)
 {
@@ -572,6 +593,11 @@ void headerBlock(String str)
 void changeFrequencyTextButton(int y)
 {
   button(15, y, 1, "Enter Frequency");
+}
+
+void loadDefaults(int y)
+{
+  button(15, y, 1, " Load Defaults ");
 }
 
 // ********************************************************
@@ -854,6 +880,17 @@ void checkButtonPressed(int x, int y)
         {
           deviceState = FREQUENCY_SCREEN_TEXT;
           changeDisplayScreens();
+        }
+
+        // Load Defaults button
+        if(x > 15 && x < 124 && y > 270 && y < 297)
+        {
+          frequency = 100;
+		  pkpkVoltage = 2.5;
+		  rmsVoltage = .884;
+		  dBm = -39.032;
+		  waveform = 0;
+		  updateDisplayScreen();
         }
         break;
 
@@ -1555,8 +1592,8 @@ void readData()
     if(deviceState == MAIN_SCREEN)
     {
       usbConnected = 1;
-      usbStatusClear(290);
-      usbStatus(290);
+      //usbStatusClear(290);
+      //usbStatus(290);
     }
     return;
   }
@@ -1566,8 +1603,8 @@ void readData()
     if(deviceState == MAIN_SCREEN)
     {
       usbConnected = 0;
-      usbStatusClear(290);
-      usbStatus(290);
+      //usbStatusClear(290);
+      //usbStatus(290);
     }
     return;
   }
@@ -1708,6 +1745,60 @@ void sendDataToPC()
   dataStr += str3;
   dataStr.toCharArray(data, 22);
 
-  //Serial.println("#12345678.91-2499.9-0");
   Serial.println(data);
+}
+
+void storeData()
+{
+  char chr1[12];
+  char chr2[7];
+  char chr3[2];
+  
+  ltoa(frequency, chr1, 10);
+  dtostrf(pkpkVoltage, 6, 1, chr2);
+  dtostrf(waveform, 1, 0, chr3);
+  
+  String str1 = String(chr1);
+  String str2 = String(chr2);
+  String str3 = String(chr3);
+  
+  dataStr = "#";
+  
+  int length = 10 - str1.length();
+  if(length > 8)
+  {
+    length = 8; 
+  }
+  for(int i = 0; i < length; i++)
+  {
+    dataStr += "0";
+  }
+  if(length < 8)
+  {
+    dataStr += str1.substring(0, str1.length()-2);
+    dataStr += ".";
+    dataStr += str1.substring(str1.length()-2, str1.length());
+  }
+  else
+  {
+    if(str1.length() <= 1)
+    {
+      dataStr += ".0";
+      dataStr += str1;
+    }
+    else
+    {
+      dataStr += ".";
+      dataStr += str1;
+    }
+  }
+  
+  dataStr += "-";
+  str2.replace(" ", "0");
+  dataStr += str2;
+  dataStr += "-";
+  dataStr += str3;
+  dataStr.toCharArray(data, 22);
+  
+  EepromUtil::eeprom_write_string(0, data);
 }
