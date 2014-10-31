@@ -109,22 +109,19 @@ void setup(void)
 
   if(EepromUtil::eeprom_read_string(0, readBuffer, 22))
   {
-    String str = String(readBuffer);
-    str.substring(1, 12).toCharArray(freq, 12);
-    str.substring(13, 19).toCharArray(volt, 7);
-    str.substring(20, 21).toCharArray(wave, 2);
-    
-    freq[sizeof(freq)-4] = freq[sizeof(freq)-3];
-    freq[sizeof(freq)-3] = freq[sizeof(freq)-2];
-    freq[sizeof(freq)-2] = freq[sizeof(freq)-1];
-    freq[sizeof(freq)-1] = '\0';
-    
-    //frequency = strtod(freq, NULL);
-    frequency = atol(freq);
-    pkpkVoltage = strtod(volt, NULL);
-    rmsVoltage = pkpkVoltage / (2 * 1.41421356237);
-    dBm = 20*log10((pkpkVoltage/100)/pow(.05, .5));
-    waveform = strtod(wave, NULL);
+    stringToSignal();
+
+    if(frequency < 100 || frequency > 1000000000)
+    {
+    	frequency = 100;
+    }
+
+    if(pkpkVoltage < 2.5 || pkpkVoltage > 2500)
+    {
+    	pkpkVoltage = 2.5;
+        rmsVoltage = pkpkVoltage / (2 * 1.41421356237);
+        dBm = 20*log10((pkpkVoltage/100)/pow(.05, .5));
+    }
   }
 
   // Clear the screen
@@ -142,23 +139,7 @@ void loop()
     
     if(signalData)
     {
-      String str = String(readBuffer);
-      str.substring(1, 12).toCharArray(freq, 12);
-      str.substring(13, 19).toCharArray(volt, 7);
-      str.substring(20, 21).toCharArray(wave, 2);
-      
-      // Remove the decimal
-      freq[sizeof(freq)-4] = freq[sizeof(freq)-3];
-      freq[sizeof(freq)-3] = freq[sizeof(freq)-2];
-      freq[sizeof(freq)-2] = freq[sizeof(freq)-1];
-      freq[sizeof(freq)-1] = '\0';
-
-      frequency = atol(freq);
-      pkpkVoltage = strtod(volt, NULL);
-      rmsVoltage = pkpkVoltage / (2 * 1.41421356237);
-      dBm = 20*log10((pkpkVoltage/100)/pow(.05, .5));
-      waveform = strtod(wave, NULL);
-      
+      stringToSignal();      
       sendDataToArduino();
       updateDisplayScreen();
       return;
@@ -364,6 +345,7 @@ void changeFrequencyTextView()
   keypadTextBlock(70);
   button(40, 185, 1, "Change Frequency Screen");
   keypadDescriptionBlock(135);
+  button(164, 275, 2, "SAVE");
   backButton();
 }
 
@@ -1427,6 +1409,20 @@ void checkButtonPressed(int x, int y)
           changeDisplayScreens();
         }
 
+        // SAVE button
+        if(x > 164 && x < 230 && y > 260 && y < 310)
+        {
+          keypadTextMessageClear(110);
+          if(storeData())
+          {
+          	keypadTextMessage(110, GREEN, "  Signal Saved");
+          }
+          else
+          {
+          	keypadTextMessage(110, RED, "    Error Saving ");
+          }
+        }
+
         // Back button
         if(x > 10 && x < 70 && y > 260 && y < 310)
         {
@@ -1457,13 +1453,13 @@ void button(int x, int y, int textSize, String str)
   tft.setTextSize(textSize);
   tft.println(str);
 
-  //Serial.println(str);
-  //Serial.println(x);
-  //Serial.println(y);
+  Serial.println(str);
+  Serial.println(x);
+  Serial.println(y);
   int x2 = x + (buttonLength+(padding*2));
-  //Serial.println(x2);
+  Serial.println(x2);
   int y2 = y + (buttonHeight+(padding*2));
-  //Serial.println(y2);
+  Serial.println(y2);
 }
 
 // Helper method. Formats the frequency to the string frequencyString
@@ -1629,126 +1625,36 @@ void readData()
     readBuffer[i] = '\0';
     signalData = true;
     return;
-  }
-  
-  //if (c == '\n')
-  //{
-  //  break;
-  //}
-  
+  }  
 }
 
 void sendDataToArduino()
 {
-  char chr1[12];
-  char chr2[7];
-  char chr3[2];
-  
-  ltoa(frequency, chr1, 10);
-  dtostrf(pkpkVoltage, 6, 1, chr2);
-  dtostrf(waveform, 1, 0, chr3);
-  
-  String str1 = String(chr1);
-  String str2 = String(chr2);
-  String str3 = String(chr3);
-  
-  dataStr = "#";
-  
-  int length = 10 - str1.length();
-  if(length > 8)
-  {
-    length = 8; 
-  }
-  for(int i = 0; i < length; i++)
-  {
-    dataStr += "0";
-  }
-  if(length < 8)
-  {
-    dataStr += str1.substring(0, str1.length()-2);
-    dataStr += ".";
-    dataStr += str1.substring(str1.length()-2, str1.length());
-  }
-  else
-  {
-    if(str1.length() <= 1)
-    {
-      dataStr += ".0";
-      dataStr += str1;
-    }
-    else
-    {
-      dataStr += ".";
-      dataStr += str1;
-    }
-  }
-
-  dataStr += "-";
-  dataStr += str2;
-  dataStr += "-";
-  dataStr += str3;
-  dataStr.toCharArray(data, 22);
-
+  signalToString();
   Serial1.write(data);
-  //TODO CHECK IF CHANGING TO Serial.println(data) works with fahim's if problems arise
+  //TODO CHECK IF CHANGING TO Serial.println(data) works with fahim's arduino or if problems arise
 }
 
 void sendDataToPC()
 {
-  char chr1[12];
-  char chr2[7];
-  char chr3[2];
-  
-  ltoa(frequency, chr1, 10);
-  dtostrf(pkpkVoltage, 6, 1, chr2);
-  dtostrf(waveform, 1, 0, chr3);
-  
-  String str1 = String(chr1);
-  String str2 = String(chr2);
-  String str3 = String(chr3);
-  
-  dataStr = "#";
-  
-  int length = 10 - str1.length();
-  if(length > 8)
-  {
-    length = 8; 
-  }
-  for(int i = 0; i < length; i++)
-  {
-    dataStr += "0";
-  }
-  if(length < 8)
-  {
-    dataStr += str1.substring(0, str1.length()-2);
-    dataStr += ".";
-    dataStr += str1.substring(str1.length()-2, str1.length());
-  }
-  else
-  {
-    if(str1.length() <= 1)
-    {
-      dataStr += ".0";
-      dataStr += str1;
-    }
-    else
-    {
-      dataStr += ".";
-      dataStr += str1;
-    }
-  }
-  
-  dataStr += "-";
-  str2.replace(" ", "0");
-  dataStr += str2;
-  dataStr += "-";
-  dataStr += str3;
-  dataStr.toCharArray(data, 22);
-
+  signalToString();
   Serial.println(data);
 }
 
-void storeData()
+boolean storeData()
+{
+  signalToString();
+  
+  if(EepromUtil::eeprom_write_string(0, data))
+  {
+  	return true;
+  }
+
+  return false;
+}
+
+// Helper method that puts the signal variables into the character arry 'data'
+void signalToString()
 {
   char chr1[12];
   char chr2[7];
@@ -1792,13 +1698,31 @@ void storeData()
       dataStr += str1;
     }
   }
-  
+
   dataStr += "-";
-  str2.replace(" ", "0");
   dataStr += str2;
   dataStr += "-";
   dataStr += str3;
   dataStr.toCharArray(data, 22);
-  
-  EepromUtil::eeprom_write_string(0, data);
+}
+
+// Helper method takes the data from the 'readBuffer' character arry and puts it into the signal variables
+void stringToSignal()
+{
+	String str = String(readBuffer);
+	str.substring(1, 12).toCharArray(freq, 12);
+	str.substring(13, 19).toCharArray(volt, 7);
+	str.substring(20, 21).toCharArray(wave, 2);
+
+	// Remove the decimal
+	freq[sizeof(freq)-4] = freq[sizeof(freq)-3];
+	freq[sizeof(freq)-3] = freq[sizeof(freq)-2];
+	freq[sizeof(freq)-2] = freq[sizeof(freq)-1];
+	freq[sizeof(freq)-1] = '\0';
+
+	frequency = atol(freq);
+	pkpkVoltage = strtod(volt, NULL);
+	rmsVoltage = pkpkVoltage / (2 * 1.41421356237);
+	dBm = 20*log10((pkpkVoltage/100)/pow(.05, .5));
+	waveform = strtod(wave, NULL);
 }
