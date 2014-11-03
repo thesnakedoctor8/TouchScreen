@@ -1476,10 +1476,19 @@ String frequencyToString(long frequency)
   
   if (frequency < 100000)
   {
-    frequencyString = str.substring(0, length - 2);
-    frequencyString += ".";
-    frequencyString += str.substring(length - 2, length);
-    frequencyString += " Hz";
+  	if (frequency < 10)
+  	{
+	    frequencyString = ".0";
+	    frequencyString += str.substring(0, length - 2);
+	    frequencyString += " Hz";
+  	}
+  	else
+  	{
+  		frequencyString = str.substring(0, length - 2);
+	    frequencyString += ".";
+	    frequencyString += str.substring(length - 2, length);
+	    frequencyString += " Hz";
+  	}    
   }
   else
   {
