@@ -1453,13 +1453,13 @@ void button(int x, int y, int textSize, String str)
   tft.setTextSize(textSize);
   tft.println(str);
 
-  Serial.println(str);
-  Serial.println(x);
-  Serial.println(y);
+  //Serial.println(str);
+  //Serial.println(x);
+  //Serial.println(y);
   int x2 = x + (buttonLength+(padding*2));
-  Serial.println(x2);
+  //Serial.println(x2);
   int y2 = y + (buttonHeight+(padding*2));
-  Serial.println(y2);
+  //Serial.println(y2);
 }
 
 // Helper method. Formats the frequency to the string frequencyString
@@ -1709,6 +1709,7 @@ void signalToString()
   }
 
   dataStr += "-";
+  str2.replace(" ", "0");
   dataStr += str2;
   dataStr += "-";
   dataStr += str3;
