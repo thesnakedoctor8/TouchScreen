@@ -1623,17 +1623,52 @@ void readData()
   
   if(c == '#')
   {
+  	unsigned long startTime;
+  	unsigned long currentTime;
+
     readBuffer[0] = c;
-    int i = 1;
-    while(i <= 20)
+    for(int i = 1; i <= 20; i++)
     {
-      while(!Serial.available());
+    	startTime = millis();
+    	currentTime = millis();
+
+    	while(!Serial.available())
+      	{
+      	  currentTime = millis();
+      	  if((currentTime - startTime) > 250)
+      	  {
+      	    return;
+      	  }
+        }
+        readBuffer[i] = (char)Serial.read();
+    }
+    readBuffer[21] = '\0';
+    if(readBuffer[9] == '.' && readBuffer[12] == '-' && readBuffer[17] == '.' && readBuffer[19] == '-' &&)
+    {
+    	signalData = true;
+    }
+    return;
+
+    /*
+    int i = 1;
+    while(i <= 20 || (currentTime - startTime) < 500)
+    {
+      while(!Serial.available())
+      {
+      	startTime = millis();
+      	currentTime = millis();
+      	if((currentTime - startTime) > 250)
+      	{
+      		retrun;
+      	}
+      }
       readBuffer[i] = (char)Serial.read();
       i++;
     }
     readBuffer[i] = '\0';
     signalData = true;
     return;
+    */
   }  
 }
 
