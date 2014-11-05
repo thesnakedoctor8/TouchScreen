@@ -25,7 +25,6 @@
 #define MAIN_SCREEN           0
 #define FREQUENCY_SCREEN      1
 #define OUTPUT_SCREEN         2
-
 #define FREQUENCY_SCREEN_TEXT 5
 
 // Global variables
@@ -77,7 +76,6 @@ Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 // String for holding the frequency typed
 String keypadStr;// = String(9);
 int keysPressed = 0;
-
 
 // The FT6206 uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 ts = Adafruit_FT6206();
@@ -170,20 +168,24 @@ void loop()
           frequency = tempFrequency;
           sendDataToArduino();
           sendDataToPC();
-          keypadTextMessage(110, GREEN, "Frequency Changed");
+          // Draw a black rectangle over the frequency
+          frequencyTextClear(51);
+          // Redraw the frequency text
+          frequencyText(51);
+          keypadTextMessage(140, GREEN, "Frequency Changed");
         }
         else
         {
-          keypadTextMessage(110, RED, " Invalid Input!");
+          keypadTextMessage(140, RED, " Invalid Input!");
         }
 
         keypadStr = "";
         keysPressed = 0;
-        keypadTextClear(70);
-        keypadText(70);
+        keypadTextClear(100);
+        keypadText(100);
         return;
       }
-
+      
       // Go to FREQUENCY_SCREEN_TEXT if '#' pressed
       deviceState = FREQUENCY_SCREEN_TEXT;
       keypadStr = "";
@@ -195,7 +197,7 @@ void loop()
     // Only handle keypresses in the FREQUENCY_SCREEN_TEXT
     if(deviceState == FREQUENCY_SCREEN_TEXT)
     {
-      keypadTextMessageClear(110);
+      keypadTextMessageClear(140);
 
       switch (key)
       {
@@ -204,8 +206,8 @@ void loop()
           {
             if(keysPressedFunction('0'))
             {
-              keypadTextClear(70);
-              keypadText(70);
+              keypadTextClear(100);
+              keypadText(100);
             }
           }
           break;
@@ -213,72 +215,72 @@ void loop()
         case '1':
           if(keysPressedFunction('1'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '2':
           if(keysPressedFunction('2'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '3':
           if(keysPressedFunction('3'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '4':
           if(keysPressedFunction('4'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '5':
           if(keysPressedFunction('5'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '6':
           if(keysPressedFunction('6'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '7':
           if(keysPressedFunction('7'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '8':
           if(keysPressedFunction('8'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
         case '9':
           if(keysPressedFunction('9'))
           {
-            keypadTextClear(70);
-            keypadText(70);
+            keypadTextClear(100);
+            keypadText(100);
           }
           break;
 
@@ -287,8 +289,8 @@ void loop()
           keysPressed = 0;
           sendDataToArduino();
           sendDataToPC();
-          keypadTextClear(70);
-          keypadText(70);
+          keypadTextClear(100);
+          keypadText(100);
           break;
       }
     }    
@@ -342,9 +344,10 @@ void changeFrequencyView()
 void changeFrequencyTextView()
 {
   headerBlock("Enter Frequency");
-  keypadTextBlock(70);
-  button(40, 185, 1, "Change Frequency Screen");
-  keypadDescriptionBlock(135);
+  frequencyText(51);
+  keypadTextBlock(100);
+  button(40, 220, 1, "Change Frequency Screen");
+  keypadDescriptionBlock(170);
   button(164, 275, 2, "SAVE");
   backButton();
 }
@@ -518,11 +521,11 @@ void keypadDescriptionBlock(int y)
   tft.setCursor(0, y);
   tft.setTextColor(WHITE);
   tft.setTextSize(1);
-  tft.println("  Instructions:");
-  tft.println("  Use the keypad to enter");
-  tft.println("  the frequency. Press *");
-  tft.println("  to clear the input and");
-  tft.println("  press # to enter it");
+  tft.println("        Instructions:");
+  tft.println("        Use the keypad to enter");
+  tft.println("        the frequency. Press *");
+  tft.println("        to clear the input and");
+  tft.println("        press # to enter it");
 }
 
 // *********************************************************
@@ -792,6 +795,13 @@ void updateDisplayScreen()
       break;
 
     case FREQUENCY_SCREEN:
+      // Draw a black rectangle over the frequency
+      frequencyTextClear(51);
+      // Redraw the frequency text
+      frequencyText(51);
+      break;
+
+    case FREQUENCY_SCREEN_TEXT:
       // Draw a black rectangle over the frequency
       frequencyTextClear(51);
       // Redraw the frequency text
@@ -1403,7 +1413,7 @@ void checkButtonPressed(int x, int y)
     ////////////////////////////////////////////////////// 
     case FREQUENCY_SCREEN_TEXT:
         // Change frequency screen button
-        if(x > 40 && x < 197 && y > 185 && y < 212)
+        if(x > 40 && x < 197 && y > 220 && y < 247)
         {
           deviceState = FREQUENCY_SCREEN;
           changeDisplayScreens();
@@ -1412,14 +1422,14 @@ void checkButtonPressed(int x, int y)
         // SAVE button
         if(x > 164 && x < 230 && y > 260 && y < 310)
         {
-          keypadTextMessageClear(110);
+          keypadTextMessageClear(140);
           if(storeData())
           {
-          	keypadTextMessage(110, GREEN, "  Signal Saved");
+          	keypadTextMessage(140, GREEN, "  Signal Saved");
           }
           else
           {
-          	keypadTextMessage(110, RED, "    Error Saving ");
+          	keypadTextMessage(140, RED, "    Error Saving ");
           }
         }
 
@@ -1643,7 +1653,7 @@ void readData()
         readBuffer[i] = (char)Serial.read();
     }
     readBuffer[21] = '\0';
-    if(readBuffer[9] == '.' && readBuffer[12] == '-' && readBuffer[17] == '.' && readBuffer[19] == '-' &&)
+    if(readBuffer[9] == '.' && readBuffer[12] == '-' && readBuffer[17] == '.' && readBuffer[19] == '-')
     {
     	signalData = true;
     }
