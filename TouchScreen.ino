@@ -1310,7 +1310,7 @@ void checkButtonPressed(int x, int y)
         // dBm Increment Panel
         if(x > 10 && x < 60 && y > 208 && y < 248)
         {
-          if(dBm >= -40.032)
+          if(dBm >= -38.032)
           {
             dBm -= 1;
             rmsVoltage = pow(.05, .5) * pow(2.7182818, (dBm/8.6858896));
@@ -1333,7 +1333,7 @@ void checkButtonPressed(int x, int y)
         }
         if(x > 65 && x < 105 && y > 208 && y < 248)
         {
-          if(dBm >= -39.082)
+          if(dBm >= -38.082)
           {
             dBm -= .05;
             rmsVoltage = pow(.05, .5) * pow(2.7182818, (dBm/8.6858896));
@@ -1356,9 +1356,9 @@ void checkButtonPressed(int x, int y)
         }
         if(x > 120 && x < 170 && y > 208 && y < 248)
         {
-          if(dBm <= 19.970)
+          if(dBm <= 20.920)
           {
-            dBm += 1;
+            dBm += .05;
             rmsVoltage = pow(.05, .5) * pow(2.7182818, (dBm/8.6858896));
             pkpkVoltage = rmsVoltage * (2 * 1.41421356237);
             sendDataToArduino();
@@ -1379,9 +1379,9 @@ void checkButtonPressed(int x, int y)
         }
         if(x > 175 && x < 225 && y > 208 && y < 248)
         {
-          if(dBm <= 20.920)
+          if(dBm <= 19.970)
           {
-            dBm += .05;
+            dBm += 1;
             rmsVoltage = pow(.05, .5) * pow(2.7182818, (dBm/8.6858896));
             pkpkVoltage = rmsVoltage * (2 * 1.41421356237);
             sendDataToArduino();
